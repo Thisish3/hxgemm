@@ -33,5 +33,11 @@
      - bank conflict는 shared **store**에서 보고된다: "평균 1.3-way, 16,777,216 store 요청 중 4,331,909 conflict, store wavefront의 20.53 %"(Est. Speedup 16.54 %). `As[ty][tx]`·`Bs[ty][tx]` store는 warp 안에서 연속 주소인데 왜 conflict가 나는지 원인 미확인. Source Counters에서 줄 단위로 확인할 것.
      - k02 rule: "global load에서 sector 32 B 중 평균 26.4 B만 사용"(Est. Speedup 15.47 %). 2048은 32의 배수인데 왜 100 %가 아닌지 원인 미확인.
      - k03 Source: 18행 내부 루프가 not-issued stall 샘플의 76.06 %, 타일 적재 14·15행이 10.25 %·10.19 %.
+5. **k04(기본 타일)의 Nsight 진단: shared load conflict, C store 비연속** (4096³, 2026-11-10, `docs/blog/2026-11-10_nsight_k03_k04/`)
+   - shared load: 평균 5.0-way bank conflict, 268,435,456 conflict = load wavefront의 39.93 %(Est. Speedup 27.69 %).
+   - shared store: 평균 2.4-way, 16,777,216 conflict = store wavefront의 33.33 %(Est. 23.12 %).
+   - C global store: sector 32 B 중 평균 4.0 B만 사용(Est. 61.48 %). 스레드가 TN=8개 연속 열을 스칼라로 쓰므로 warp 안 스레드 간 간격이 8 float인 것과 맞지만, 그것이 원인이라고 아직 측정으로 확인하지 않음.
+   - occupancy 33.3 %(레지스터 115, Est. 29.74 %).
+   - 이 중 무엇이 시간에 가장 큰지는 원인 미확인. Task 7(자동 탐색) 후 Task 10 수동 개선에서 하나씩 바꿔 잰다.
 4. **2048³·2047³에서 k01/k02/k03 결과가 cuBLAS와 비트 단위로 같다** (max_abs_err 0, 1000³에서는 8.0e-05)
    - 큰 크기의 정확성 기준이 cuBLAS라서 검증이 자명해 보일 수 있다. 작은 크기(≤ 512)는 CPU FP64와 비교해 통과했다. 같은 이유는 원인 미확인(누적 순서가 같다는 추측은 미확인).
