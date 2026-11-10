@@ -33,21 +33,27 @@
      - bank conflict는 shared **store**에서 보고된다: "평균 1.3-way, 16,777,216 store 요청 중 4,331,909 conflict, store wavefront의 20.53 %"(Est. Speedup 16.54 %). `As[ty][tx]`·`Bs[ty][tx]` store는 warp 안에서 연속 주소인데 왜 conflict가 나는지 원인 미확인. Source Counters에서 줄 단위로 확인할 것.
      - k02 rule: "global load에서 sector 32 B 중 평균 26.4 B만 사용"(Est. Speedup 15.47 %). 2048은 32의 배수인데 왜 100 %가 아닌지 원인 미확인.
      - k03 Source: 18행 내부 루프가 not-issued stall 샘플의 76.06 %, 타일 적재 14·15행이 10.25 %·10.19 %.
-5. **k04(기본 타일)의 Nsight 진단: shared load conflict, C store 비연속** (4096³, 2026-11-10, `docs/blog/2026-11-10_nsight_k03_k04/`)
+5. **k04(옛 기본 타일 128x128x8x8x8)의 Nsight 진단: shared load conflict, C store 비연속** (4096³, 2026-11-10, `docs/blog/2026-11-10_nsight_k03_k04/`)
    - shared load: 평균 5.0-way bank conflict, 268,435,456 conflict = load wavefront의 39.93 %(Est. Speedup 27.69 %).
    - shared store: 평균 2.4-way, 16,777,216 conflict = store wavefront의 33.33 %(Est. 23.12 %).
    - C global store: sector 32 B 중 평균 4.0 B만 사용(Est. 61.48 %). 스레드가 TN=8개 연속 열을 스칼라로 쓰므로 warp 안 스레드 간 간격이 8 float인 것과 맞지만, 그것이 원인이라고 아직 측정으로 확인하지 않음.
    - occupancy 33.3 %(레지스터 115, Est. 29.74 %).
    - 이 중 무엇이 시간에 가장 큰지는 원인 미확인. Task 7(자동 탐색) 후 Task 10 수동 개선에서 하나씩 바꿔 잰다.
-6. **k05에서 DRAM read가 k04의 2배, L2 hit rate 하락** (4096³, 2026-11-10, `docs/blog/2026-11-10_nsight_k04_k05/`)
+6. **k05(옛 기본 타일)에서 DRAM read가 k04의 2배, L2 hit rate 하락** (4096³, 2026-11-10, `docs/blog/2026-11-10_nsight_k04_k05/`)
    - DRAM read 1.06 → 2.14 GB, L2 hit 77.13 → 57.46 %. 그래도 시간은 −11 %(20.80 → 18.49 ms).
-   - 원인 미확인. 후보: `cp.async.cg`(L1 우회)로 A/B 재사용이 L1에서 L2로 옮겨 감, 블록 실행 순서 변화. `cp.async.ca`로 바꿔 보거나 L1/L2 sector 지표를 비교해 확인한다.
+   - 새 기본 타일(R10)에서는 반대로 k04 4.32 GB → k05 2.08 GB로 줄었다(최종 ncu). 옛 타일에서 늘어난 원인은 미확인. 후보: `cp.async.cg`(L1 우회)로 A/B 재사용이 L1에서 L2로 옮겨 감, 블록 실행 순서 변화. `cp.async.ca`로 바꿔 보거나 L1/L2 sector 지표를 비교해 확인한다.
    - k05의 55행 `load()` 호출이 stall 샘플 29.2 %를 차지하는 이유도 미확인(SASS로 확인).
 7. **Python 벤치에서 본 비배수·작은 모양 성능** (2026-11-10, `docs/results/2026-11-10_py_bench.csv`, 기본 타일)
    - k05가 2047³(4914.2 GFLOPS)·4095³(5207.0)에서 k04(5494.5·6083.6)보다 느리다. 4096³에서는 k05가 빠르다(7459.6 vs 6618.6). 코드상 ld가 4의 배수가 아니면 k04·k05 모두 float4/16 B 경로 대신 스칼라 경로를 쓰고, k05의 스칼라 경로는 4 B `cp.async`를 원소마다 발행한다. 이것이 느린 이유인지는 측정하지 않았다(원인 미확인).
    - k01이 1000³(287.0)·2047³(366.2)에서 2의 거듭제곱 크기(약 109)보다 2.6~3.4배 빠르다. 원인 미확인.
    - 8192³에서 k05는 torch 대비 66.3 %(4096³ 80.2 %보다 낮음), torch는 8192³에서 11402.8 GFLOPS로 4096³(9297.4)보다 높다. 원인 미확인.
    - 디코드 모양 16×4096²에서 k05 기본 타일은 torch 대비 24.2 %(sweep 최고 타일도 55.8 %).
+8. **k05(새 기본 타일)와 cuBLAS의 남은 차이 9.5 %** (4096³, 2026-11-10, `docs/results/2026-11-10_ncu_summary.csv`)
+   - 시간 16.33 vs 14.78 ms. occupancy(33.3 %), 레지스터(120 vs 122), IPC(2.87 vs 2.99)는 비슷하다.
+   - 차이가 큰 지표: barrier stall 123,495 vs 24,252(5.1배), MIO throttle 60,144 vs 1,737, 실행 명령 2.65 G vs 2.52 G(+5 %). cuBLAS 커널은 `ampere_sgemm_128x64_nn`(타일 128×64).
+   - k05 SASS(기본 타일): 내부 루프 `LDS.128` 96개, FFMA 1,056개, `BAR.SYNC` 1개. A 조각 shared 읽기는 컴파일러가 이미 k 방향 float4로 묶고 있어 "shared load 벡터화"는 개선 후보가 아니다.
+   - 어느 지표가 남은 시간 차이를 만드는지는 원인 미확인. 성공 기준(80 %)은 넘었으므로 Task 10은 0회로 종료했다(LEDGER R11). 이어서 개선한다면 후보는 barrier 횟수 줄이기(BK·stages 조합), warptiling.
+9. **8192³에서 k04·k05가 4096³보다 낮다** (k05 90.53 % → 74.46 %, cuBLAS는 9298 → 11397 GFLOPS로 오히려 올라감). 원인 미확인.
 
 ## 해결
 

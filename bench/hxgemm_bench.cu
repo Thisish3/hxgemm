@@ -125,7 +125,8 @@ std::vector<hxgemm_tile_t> tiles_for(const Opts& o, int k) {
   }
   if (o.have_tile) return {o.tile};
   // Library defaults, spelled out so the CSV records the tile that actually ran.
-  return {k == HXGEMM_K04 ? hxgemm_tile_t{128, 128, 8, 8, 8, 0} : hxgemm_tile_t{128, 128, 8, 8, 8, 2}};
+  // Must match launch_k04/launch_k05 defaults (4096^3 sweep winners, LEDGER R10).
+  return {k == HXGEMM_K04 ? hxgemm_tile_t{64, 128, 16, 8, 4, 0} : hxgemm_tile_t{128, 128, 32, 8, 4, 2}};
 }
 
 struct Row {

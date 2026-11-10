@@ -110,7 +110,7 @@ int run(int M, int N, int K, float alpha, const float* A, int lda, const float* 
 int launch_k05(hxgemm_tile_t t, int M, int N, int K, float alpha, const float* A, int lda,
                const float* B, int ldb, float beta, float* C, int ldc, cudaStream_t s) {
   if (t.bm == 0 && t.bn == 0 && t.bk == 0 && t.tm == 0 && t.tn == 0 && t.stages == 0)
-    t = hxgemm_tile_t{128, 128, 8, 8, 8, 2};
+    t = hxgemm_tile_t{128, 128, 32, 8, 4, 2};  // 4096^3 sweep winner (docs/results/2026-11-10_best_tiles.md)
 #define HX_CASE(BM, BN, BK, TM, TN)                                                      \
   if (t.bm == BM && t.bn == BN && t.bk == BK && t.tm == TM && t.tn == TN) {             \
     if (t.stages == 2) return run<BM, BN, BK, TM, TN, 2>(M, N, K, alpha, A, lda, B, ldb, beta, C, ldc, s); \

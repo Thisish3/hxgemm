@@ -1,0 +1,7 @@
+==WARNING== Note: Running with unmodified GPU clocks. If not controlled otherwise, profiling results may be inconsistent.
+==PROF== Connected to process 40792 (/home/a/hxgemm/build/hxgemm_bench)
+==PROF== Profiling "k05_pipe": 0%....50%....100% - 20 passes
+# shape M=4096 N=4096 K=4096 ref=gpu_fp64 alpha=1 beta=0 offset=0
+kernel=k05    tile=128x128x32x8x4x2 M=4096  N=4096  K=4096  max_abs_err=3.868e-04 max_rel_err=3.004e+01 pass=1 fnv=45e5410fa35be654
+==PROF== Disconnected from process 40792
+==PROF== Report: /home/a/hxgemm/docs/results/2026-11-10_k05.ncu-repz
