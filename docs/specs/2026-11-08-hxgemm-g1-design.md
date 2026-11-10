@@ -107,4 +107,18 @@ FP16/BF16, Tensor Core(G2), 양자화와 split-K(G3), HIP(G4), batched GEMM, 열
 
 ## 환경 기록
 
-(SSH 연결 후 Task 0에서 채운다.)
+2026-11-10, 데스크탑 WSL2(Ubuntu 22.04)에서 직접 실행해 확인했다.
+
+| 항목 | 값 |
+|---|---|
+| GPU | NVIDIA GeForce RTX 3060 Ti, 8192 MiB, Bus 00000000:01:00.0, 디스플레이 연결됨(Disp.A On, Xwayland 프로세스) |
+| 드라이버 | Windows 581.80 / WSL `nvidia-smi` 580.105.07, 드라이버가 지원하는 CUDA 13.0 |
+| CUDA 툴킷 | nvcc 12.2 (V12.2.140), `/usr/local/cuda` → 12.2 |
+| 컴파일러·빌드 | g++ 11.4.0, cmake 3.22.1, ninja `/usr/bin/ninja` |
+| Python / PyTorch | Python 3.10.12(`/usr/bin/python3`), torch 2.9.1+cu128, `torch.version.cuda` 12.8, `cuda.is_available()` True |
+| Nsight Compute | `/usr/local/cuda/bin/ncu`, 2026.3.1.0 (build 38829034) |
+| WSL2에서 ncu 카운터 | **읽힌다.** 작은 테스트 커널에서 `--section SpeedOfLight`가 7 pass로 수집됨(권한 오류 없음). ncu 기본값(`--clock-control base`)에서 SM 1.66 GHz, DRAM 6.78 GHz로 보고됨 |
+| 클럭 고정 `nvidia-smi -lgc 1500,1500` | 실패(일반 사용자): `The current user does not have permission to change clocks for GPU 00000000:01:00.0.` / `Terminating early due to previous errors.` `-rgc`도 같은 메시지. sudo로는 아직 시도하지 않음 → 5절대로 측정 중 클럭을 1초 간격으로 기록한다 |
+| 메모리 | WSL2에 보이는 RAM 7 GiB(`free -g`), 호스트 16 GB |
+
+device query(`build/devinfo`)는 Task 1에서 추가한다.
