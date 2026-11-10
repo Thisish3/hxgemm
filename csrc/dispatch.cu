@@ -1,3 +1,4 @@
+#include <climits>
 #include "gemm.h"
 #include "kernels/common.cuh"
 #include "kernels/launch.h"
@@ -8,8 +9,13 @@ bool bad_args(int M, int N, int K, const float* A, int lda, const float* B, int 
   if (M < 0 || N < 0 || K < 0) return true;
   if (M == 0 || N == 0) return false;
   if (ldc < N || !C) return true;
+  // Kernels index with int: the last element of each matrix must have an offset < 2^31.
+  auto too_big = [](long long rows, long long ld, long long cols) {
+    return (rows - 1) * ld + cols > static_cast<long long>(INT_MAX);
+  };
+  if (too_big(M, ldc, N)) return true;
   if (K == 0) return false;
-  return !A || !B || lda < K || ldb < N;
+  return !A || !B || lda < K || ldb < N || too_big(M, lda, K) || too_big(K, ldb, N);
 }
 }  // namespace
 

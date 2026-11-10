@@ -1,5 +1,6 @@
 #include <torch/extension.h>
 #include <ATen/cuda/CUDAContext.h>
+#include <c10/cuda/CUDAGuard.h>
 #include "gemm.h"
 
 namespace {
@@ -17,6 +18,9 @@ void check_mat(const at::Tensor& x, const char* name) {
 void run(at::Tensor& c, const at::Tensor& a, const at::Tensor& b, int64_t kernel,
          c10::IntArrayRef tile, double alpha, double beta) {
   check_mat(a, "a"); check_mat(b, "b"); check_mat(c, "c");
+  TORCH_CHECK_VALUE(a.device() == b.device() && a.device() == c.device(),
+                    "a, b and c must be on the same CUDA device");
+  const c10::cuda::CUDAGuard guard(a.device());
   TORCH_CHECK_VALUE(a.size(1) == b.size(0) && c.size(0) == a.size(0) && c.size(1) == b.size(1),
                     "shape mismatch");
   int r = hxgemm_sgemm(static_cast<hxgemm_kernel_t>(kernel), to_tile(tile), a.size(0), b.size(1),
