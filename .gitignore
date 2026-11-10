@@ -3,3 +3,6 @@ build/
 __pycache__/
 *.ncu-rep
 *.ncu-repz
+*.egg-info/
+hxgemm_ext*.so
+.pytest_cache/

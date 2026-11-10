@@ -23,6 +23,23 @@ int main() {
   cudaMemcpy(h, C, 16, cudaMemcpyDeviceToHost);
   EXPECT(h[0] == 2 && h[3] == 8);
   EXPECT(hxgemm_sgemm(HXGEMM_K04, hxgemm_tile_t{96, 96, 8, 8, 8, 0}, 4, 4, 4, 1, A, 4, B, 4, 0, C, 4, 0) == HXGEMM_ETILE);
+  // unsupported_tile_rejected: a K05 tile whose shared memory is near the opt-in limit is
+  // accepted or rejected according to the limit read at run time; unknown tiles are always -2.
+  {
+    int optin = 0;
+    cudaDeviceGetAttribute(&optin, cudaDevAttrMaxSharedMemoryPerBlockOptin, 0);
+    const int bytes = 3 * (128 * 32 + 32 * 128) * 4;  // 98,304 B
+    const int want = bytes > optin ? HXGEMM_ETILE : HXGEMM_OK;
+    const int got = hxgemm_sgemm(HXGEMM_K05, hxgemm_tile_t{128, 128, 32, 4, 4, 3}, 4, 4, 4, 1, A, 4,
+                                 B, 4, 0, C, 4, 0);
+    cudaDeviceSynchronize();
+    std::printf("unsupported_tile_rejected: tile 128x128x32x4x4x3 needs %d B, opt-in %d B, rc=%d\n",
+                bytes, optin, got);
+    EXPECT(got == want);
+    EXPECT(hxgemm_sgemm(HXGEMM_K05, hxgemm_tile_t{96, 96, 8, 8, 8, 2}, 4, 4, 4, 1, A, 4, B, 4, 0, C, 4, 0) == HXGEMM_ETILE);
+    EXPECT(hxgemm_sgemm(HXGEMM_K05, hxgemm_tile_t{128, 128, 8, 8, 8, 4}, 4, 4, 4, 1, A, 4, B, 4, 0, C, 4, 0) == HXGEMM_ETILE);
+    EXPECT(hxgemm_sgemm(HXGEMM_K04, hxgemm_tile_t{128, 128, 8, 8, 8, 2}, 4, 4, 4, 1, A, 4, B, 4, 0, C, 4, 0) == HXGEMM_ETILE);
+  }
   std::printf(fails ? "check_args: %d failures\n" : "check_args: ok\n", fails);
   return fails != 0;
 }
