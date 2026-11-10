@@ -1,4 +1,9 @@
 cmake_minimum_required(VERSION 3.22)
+# The desktop also has apt's nvidia-cuda-toolkit (nvcc 11.5, cuBLAS 11) in /usr/bin; prefer the
+# CUDA toolkit in /usr/local/cuda unless the caller chose a compiler (see docs/LEDGER.md R4).
+if(NOT DEFINED CMAKE_CUDA_COMPILER AND NOT DEFINED ENV{CUDACXX} AND EXISTS /usr/local/cuda/bin/nvcc)
+  set(CMAKE_CUDA_COMPILER /usr/local/cuda/bin/nvcc)
+endif()
 project(hxgemm LANGUAGES CXX CUDA)
 set(CMAKE_CUDA_ARCHITECTURES 86)
 set(CMAKE_CXX_STANDARD 17)
@@ -16,3 +21,5 @@ foreach(t check_args)
   target_link_libraries(${t} PRIVATE hxgemm)
 endforeach()
 add_executable(devinfo tools/devinfo.cu)
+add_executable(hxgemm_bench bench/hxgemm_bench.cu)
+target_link_libraries(hxgemm_bench PRIVATE hxgemm CUDA::cublas)
