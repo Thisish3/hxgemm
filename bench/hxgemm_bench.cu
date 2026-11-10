@@ -24,6 +24,7 @@ struct Opts {
   std::vector<int> kernels;
   std::vector<Shape> shapes;
   bool have_tile = false, sweep = false, check_only = false, nan_c = false;
+  int offset = 0;  // shift A/B/C by this many floats and add it to lda/ldb/ldc
   hxgemm_tile_t tile = {0, 0, 0, 0, 0, 0};
   int warmup = 10, iters = 50;
   float alpha = 1.f, beta = 0.f;
@@ -35,7 +36,7 @@ struct Opts {
                "error: %s\nusage: hxgemm_bench --kernel k01|k02|k03|k04|k05|cublas|all ... "
                "--shape M,N,K ... | --squares LO:HI  [--tile bm,bn,bk,tm,tn,stages] [--sweep] "
                "[--warmup 10] [--iters 50] [--alpha 1] [--beta 0] [--check-only] [--nan-c] "
-               "[--csv path]\n",
+               "[--offset 1] [--csv path]\n",
                msg);
   std::exit(64);
 }
@@ -93,6 +94,10 @@ Opts parse(int argc, char** argv) {
     else if (a == "--beta") o.beta = std::strtof(val(), nullptr);
     else if (a == "--check-only") o.check_only = true;
     else if (a == "--nan-c") o.nan_c = true;
+    else if (a == "--offset") {
+      o.offset = std::atoi(val());
+      if (o.offset < 0 || o.offset > 64) usage("bad --offset");
+    }
     else if (a == "--csv") o.csv = val();
     else usage(("unknown argument " + a).c_str());
   }
@@ -118,7 +123,9 @@ std::vector<hxgemm_tile_t> tiles_for(const Opts& o, int k) {
     v.resize(n > 0 ? n : 0);
     return v;  // empty when the kernel offers no tiles yet
   }
-  return {o.have_tile ? o.tile : hxgemm_tile_t{0, 0, 0, 0, 0, 0}};
+  if (o.have_tile) return {o.tile};
+  // Library defaults, spelled out so the CSV records the tile that actually ran.
+  return {k == HXGEMM_K04 ? hxgemm_tile_t{128, 128, 8, 8, 8, 0} : hxgemm_tile_t{128, 128, 8, 8, 8, 2}};
 }
 
 struct Row {
@@ -178,17 +185,20 @@ int main(int argc, char** argv) {
 
   int failures = 0;
   for (const Shape& s : o.shapes) {
-    const int M = s.M, N = s.N, K = s.K, lda = K, ldb = N, ldc = N;
+    const int M = s.M, N = s.N, K = s.K, off = o.offset;
+    const int lda = K + off, ldb = N + off, ldc = N + off;
     std::vector<float> hA(size_t(M) * lda), hB(size_t(K) * ldb), hC0(size_t(M) * ldc), hC(hC0.size());
     fill_uniform(hA, 1234);
     fill_uniform(hB, 5678);
     if (o.nan_c) std::fill(hC0.begin(), hC0.end(), std::numeric_limits<float>::quiet_NaN());
     else fill_uniform(hC0, 9012);
 
-    float *dA, *dB, *dC;
-    CK(cudaMalloc(&dA, std::max<size_t>(hA.size(), 1) * 4));
-    CK(cudaMalloc(&dB, std::max<size_t>(hB.size(), 1) * 4));
-    CK(cudaMalloc(&dC, std::max<size_t>(hC0.size(), 1) * 4));
+    // With --offset, each matrix starts `off` floats past a 256 B-aligned allocation.
+    float *bA, *bB, *bC;
+    CK(cudaMalloc(&bA, (hA.size() + off + 1) * 4));
+    CK(cudaMalloc(&bB, (hB.size() + off + 1) * 4));
+    CK(cudaMalloc(&bC, (hC0.size() + off + 1) * 4));
+    float *dA = bA + off, *dB = bB + off, *dC = bC + off;
     CK(cudaMemcpy(dA, hA.data(), hA.size() * 4, cudaMemcpyHostToDevice));
     CK(cudaMemcpy(dB, hB.data(), hB.size() * 4, cudaMemcpyHostToDevice));
     auto reset_c = [&] { CK(cudaMemcpy(dC, hC0.data(), hC0.size() * 4, cudaMemcpyHostToDevice)); };
@@ -213,8 +223,8 @@ int main(int argc, char** argv) {
       ref.assign(hC.begin(), hC.end());
       ref_kind = "cublas";
     }
-    std::printf("# shape M=%d N=%d K=%d ref=%s alpha=%g beta=%g%s\n", M, N, K, ref_kind, o.alpha,
-                o.beta, o.nan_c ? " nan_c=1" : "");
+    std::printf("# shape M=%d N=%d K=%d ref=%s alpha=%g beta=%g offset=%d%s\n", M, N, K, ref_kind,
+                o.alpha, o.beta, off, o.nan_c ? " nan_c=1" : "");
 
     // cuBLAS median for pct_cublas (always measured when timing).
     float cublas_us = 0;
@@ -275,9 +285,9 @@ int main(int argc, char** argv) {
         print_row(r, csv);
       }
     }
-    cudaFree(dA);
-    cudaFree(dB);
-    cudaFree(dC);
+    cudaFree(bA);
+    cudaFree(bB);
+    cudaFree(bC);
   }
   cublasDestroy(h);
   cudaFree(flush);

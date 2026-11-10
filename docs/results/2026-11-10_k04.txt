@@ -1,0 +1,4 @@
+# shape M=4096 N=4096 K=4096 ref=cublas alpha=1 beta=0 offset=0
+kernel=k03    tile=-                M=4096  N=4096  K=4096  median_us= 131242.84 min_us= 129469.44 max_us= 133623.58 gflops=   1047.2 pct_cublas=  11.3 max_abs_err=3.967e-04 max_rel_err=3.753e+00 pass=1
+kernel=k04    tile=128x128x8x8x8x0  M=4096  N=4096  K=4096  median_us=  20812.80 min_us=  20345.86 max_us=  22105.09 gflops=   6603.6 pct_cublas=  71.0 max_abs_err=3.967e-04 max_rel_err=3.753e+00 pass=1
+kernel=cublas tile=-                M=4096  N=4096  K=4096  median_us=  14782.27 min_us=  14780.42 max_us=  15665.15 gflops=   9297.6 pct_cublas= 100.0 max_abs_err=0.000e+00 max_rel_err=0.000e+00 pass=1
