@@ -5,6 +5,7 @@ FP32 SGEMM(C = αAB + βC, 행 우선)을 naive부터 cp.async 파이프라인�
 - 설계: `docs/specs/2026-11-08-hxgemm-g1-design.md` · 계획: `docs/plans/2026-11-08-hxgemm-g1.md`
 - 실행 기록(계획과 달라진 결정 R1~R16): `docs/LEDGER.md` · 미해결 현상: `docs/KNOWN_ISSUES.md`
 - 블로그용 Nsight 캡처: `docs/blog/2026-11-10_nsight_{k02_k03,k03_k04,k04_k05}/` (옛 기본 타일 128x128x8x8x8로 잰 것, 아래 참고)
+- 블로그 글(Tistory, 시리즈 "hxgemm"): [Part 01 측정 환경과 coalescing (k01 → k02)](https://thisish3.tistory.com/63) · Part 02~04(k03 shared tiling, k04 register tiling, k05 cp.async·튜닝)는 작성 예정
 
 ## 결과 (RTX 3060 Ti, 4096³, SM 1500 MHz 고정)
 
