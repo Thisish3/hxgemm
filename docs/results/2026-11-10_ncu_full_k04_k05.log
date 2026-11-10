@@ -1,0 +1,9 @@
+==WARNING== Note: Running with unmodified GPU clocks. If not controlled otherwise, profiling results may be inconsistent.
+==PROF== Connected to process 25158 (/home/a/hxgemm/build/hxgemm_bench)
+==PROF== Profiling "k04_reg": 0%....50%....100% - 45 passes
+==PROF== Profiling "k05_pipe": 0%....50%....100% - 45 passes
+# shape M=4096 N=4096 K=4096 ref=cublas alpha=1 beta=0 offset=0
+kernel=k04    tile=128x128x8x8x8x0  M=4096  N=4096  K=4096  max_abs_err=3.967e-04 max_rel_err=3.753e+00 pass=1
+kernel=k05    tile=128x128x8x8x8x2  M=4096  N=4096  K=4096  max_abs_err=3.967e-04 max_rel_err=3.753e+00 pass=1
+==PROF== Disconnected from process 25158
+==PROF== Report: /home/a/hxgemm/docs/results/2026-11-10_ncu_full_k04_k05.ncu-repz
