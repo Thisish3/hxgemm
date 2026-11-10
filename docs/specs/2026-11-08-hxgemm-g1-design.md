@@ -51,6 +51,17 @@ int hxgemm_sgemm(hxgemm_kernel_t k, hxgemm_tile_t t, int M, int N, int K, float 
 - 반환값: 0 성공, 음수는 인자 오류(M/N/K < 0, ld가 너무 작음, null 포인터, 지원하지 않는 타일 설정)이며 커널을 실행하지 않는다. CUDA 실행 오류는 `cudaGetLastError` 값을 그대로 돌려준다.
 - M, N, K 중 하나가 0이면 아무것도 하지 않고 성공(K = 0이면 C = βC를 계산한다. BLAS 의미론).
 - cuBLAS 비교: cuBLAS는 열 우선이므로 C^T = B^T·A^T로 인자를 바꿔 `cublasSgemm`을 부른다. 이 변환은 테스트로 고정한다.
+- 타일 조회(2026-11-10 추가, LEDGER R16):
+
+  ```c
+  /* 모든 필드가 0인 타일을 넘겼을 때 실제로 쓰는 타일 */
+  hxgemm_tile_t hxgemm_default_tile(hxgemm_kernel_t k, int M, int N, int K);
+  /* k04/k05에서 현재 장비가 지원하는 타일을 최대 cap개 채우고 개수를 돌려준다 */
+  int hxgemm_list_tiles(hxgemm_kernel_t k, hxgemm_tile_t* out, int cap);
+  ```
+
+  - k01~k03: 모두 0. k04: `{64,128,16,8,4,0}`(4096³ sweep 1위).
+  - k05: ceil(M/128)·ceil(N/256) ≥ 256이면 `{128,256,16,16,8,3}`, 아니면 `{128,128,32,8,4,2}`. 경계 양쪽(256블록 vs 240블록 등)을 `bench/check_args.cu`와 `tests/test_sgemm.py::test_default_tile_rule`로 고정한다. 규칙 근거는 `docs/results/2026-11-10_heur_final.csv`.
 
 ## 4. 커널
 

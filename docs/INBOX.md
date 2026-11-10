@@ -4,7 +4,10 @@
 
 ## 2026-11-10 중간 리뷰 (휴리스틱·큰 타일 작업 커밋 전에)
 
-- [ ] 1. LEDGER에 R12~R16을 실제로 적기. 코드 주석(`tiles.h`, `gemm.h`, `launch.cu`)이 R12·R15·R16을 참조하는데 `LEDGER.md`에는 없다. 특히 R11에서 "Task 10은 0회로 종료"라고 했다가 다시 연 이유를 적는다.
-- [ ] 2. 새 공개 함수 `hxgemm_default_tile()`을 pytest와 스펙(3절 인터페이스)에 반영한다. 예: 블록 수 256 경계 양쪽 모양에서 어떤 타일을 돌려주는지 고정.
-- [ ] 3. KNOWN_ISSUES #7 갱신: 디코드 모양 16×4096²에서 k05 0.599 ms vs cuBLAS 0.189 ms(cuBLAS 대비 31.6 %, `docs/results/2026-11-10_heur_final.txt`). #9도 휴리스틱 후 8192³ 결과(약 80.6 %)로 갱신한다.
+- [x] 1. LEDGER에 R12~R16을 실제로 적기. 코드 주석(`tiles.h`, `gemm.h`, `launch.cu`)이 R12·R15·R16을 참조하는데 `LEDGER.md`에는 없다. 특히 R11에서 "Task 10은 0회로 종료"라고 했다가 다시 연 이유를 적는다.
+  - 결과: `deea42a`에 R12~R16을 적었고, 이번 커밋에 "Task 10 재개 이유" 항목(R11 0회 종료 → 사용자 요청으로 계획 밖 재개, 회차 절차·상한 3회 준수)을 R12 앞에 추가.
+- [x] 2. 새 공개 함수 `hxgemm_default_tile()`을 pytest와 스펙(3절 인터페이스)에 반영한다. 예: 블록 수 256 경계 양쪽 모양에서 어떤 타일을 돌려주는지 고정.
+  - 결과: 스펙 3절에 `hxgemm_default_tile`·`hxgemm_list_tiles`와 규칙을 추가, pytest에 `test_default_tile_rule`(경계 256블록 양쪽: 2048×4096 big / 1920×4096 small / 4096×1920 big / 4096×1792 small 등 7개)과 `test_default_tile_matches_explicit`(기본값 = 명시 타일, 비트 단위) 추가 → 63 passed, 2 skipped.
+- [x] 3. KNOWN_ISSUES #7 갱신: 디코드 모양 16×4096²에서 k05 0.599 ms vs cuBLAS 0.189 ms(cuBLAS 대비 31.6 %, `docs/results/2026-11-10_heur_final.txt`). #9도 휴리스틱 후 8192³ 결과(약 80.6 %)로 갱신한다.
+  - 결과: #7 디코드: `heur_final.txt` 원본은 k05 600.06 µs vs cuBLAS 190.46 µs = 31.7 %(요청의 0.599/0.189 ms·31.6 %와 반올림 차이)로 적음. #9(해결로 이동됨)에 휴리스틱 후 8192³을 `heur_final` 80.7 %, `auto_final` 80.1 %로 적음.
 - 참고: 18:41 Windows 블루스크린(0xD1)은 사용자가 분석하지 않기로 했다. 기록하지 않아도 된다.
