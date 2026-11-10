@@ -4,12 +4,14 @@
 
 ## Rulings
 
-- **R1 (2026-11-10, Task 0~): 원격 단계를 로컬에서 실행.** 데스크탑 Claude가 WSL2 안에서 직접 작업하므로 "원격:" 단계는 `rsync`/`ssh desk`를 빼고 저장소 루트(`~/hxgemm`)에서 `<cmd>`만 실행한다. 결과 파일을 맥으로 옮기는 `rsync`는 `git push`로 대신한다. Task 0 Step 1~3(sshd, Tailscale, 맥 키)은 `docs/DESKTOP_HANDOFF.md` 0순위에서 사용자가 직접 끝냈다.
+- **R1 (2026-11-10, Task 0~): 원격 단계를 로컬에서 실행.** 데스크탑 Claude가 WSL2 안에서 직접 작업하므로 "원격:" 단계는 `rsync`/`ssh desk`를 빼고 저장소 루트(`~/hxgemm`)에서 `<cmd>`만 실행한다. 결과 파일을 맥으로 옮기는 `rsync`는 `git push`로 대신한다. Task 0 Step 1~3 중 **데스크탑 쪽만 끝났다**(2026-11-10). systemd와 sshd는 이미 켜져 있었고, `PasswordAuthentication no`, 맥 공개키(`mac-to-desk`) 등록, Tailscale 설치·로그인은 사용자가 WSL 터미널에서 실행했다(맥 키 등록은 Claude가 하려다 자동 권한 검사에서 막혀 사용자가 실행). 확인 결과: sshd는 공개키 로그인만 허용하고(`PasswordAuthentication no`) Tailscale 망 안에서만 접속한다. **맥 쪽은 아직이다:** 맥 `~/.ssh/config`의 `Host desk` 블록이 없고, `tailscale status`에 이 데스크탑만 보여 맥이 같은 tailnet에 로그인했는지 확인되지 않았다(Task 0 Step 2의 "맥에도 Tailscale 앱 설치·로그인"). 따라서 `ssh desk` 연결은 아직 검증되지 않았다.
 
 - **R2 (2026-11-10, Task 1): `cmake_minimum_required`를 3.24 → 3.22로 낮춤.** 데스크탑 cmake가 3.22.1(Ubuntu 22.04 apt)이다. 계획의 CMakeLists가 쓰는 기능(`CMAKE_CUDA_ARCHITECTURES`, `FindCUDAToolkit`/`CUDA::cublas`, `file(GLOB CONFIGURE_DEPENDS)`)은 3.22에 모두 있어, 새 cmake를 설치하지 않고 최소 버전만 낮췄다.
 - **R3 (2026-11-10): 클럭은 Windows 관리자 권한으로 1500 MHz 고정.** WSL 안에서는 권한이 없어 `-lgc`가 실패하고, Windows 관리자 cmd의 `nvidia-smi -lgc 1500,1500`은 성공한다(스펙 환경 기록). 측정 전에 사용자가 고정하고, 클럭 로그는 그대로 같이 남긴다.
 
 - **R4 (2026-11-10, Task 2): CUDA 컴파일러를 `/usr/local/cuda/bin/nvcc`(12.2)로 고정.** 처음 configure에서 CMake가 apt `nvidia-cuda-toolkit`의 `/usr/bin/nvcc`(11.5)와 `/usr/lib/x86_64-linux-gnu/libcublas.so.11`을 골랐다. 이렇게 빌드한 `hxgemm_bench`는 첫 CUDA 호출에서 `no CUDA-capable device is detected`로 끝났고, `LD_DEBUG=libs`로 보니 WSL용 `/usr/lib/wsl/lib/libcuda.so.1`이 아니라 apt `libnvidia-compute-580`의 `/lib/x86_64-linux-gnu/libcuda.so`(580.178.04)가 로드됐다. `CMakeLists.txt`에서 `CMAKE_CUDA_COMPILER`/`CUDACXX`가 지정되지 않았고 `/usr/local/cuda/bin/nvcc`가 있으면 그것을 쓰도록 바꾸고 `build/`를 새로 만들었다. 이후 cuBLAS는 `/usr/local/cuda/lib64/libcublas.so.12`로 링크되고 정상 동작한다. Task 1의 `check_args`/devinfo도 12.2로 다시 빌드해 같은 결과를 확인했다. 시스템 패키지(nvcc 11.5, libnvidia-compute-*)는 건드리지 않았다 → KNOWN_ISSUES 후보.
+
+- **R7 (2026-11-10, 중간 리뷰): 큰 크기 검증 기준을 cuBLAS → GPU FP64 naive 커널로 변경.** max(M,N,K) > 512이면 `bench/hxgemm_bench.cu`의 `ref_gpu_fp64`(원소당 스레드 1개, FP64 누적, β = 0이면 C0를 읽지 않음)로 기준을 만든다. cuBLAS도 이 기준으로 검증된다. 결과 행에 출력 비트의 FNV-1a 해시(`fnv=`, stdout만, CSV 열은 그대로)를 추가했다. 결과: k01~k05 출력은 1000³/2047³/4096³에서 비트 단위로 같고, cuBLAS는 2047³에서만 같다(KNOWN_ISSUES #4, 해결로 이동). 4096³ 기준 계산은 수 초.
 
 ## Task 진행
 

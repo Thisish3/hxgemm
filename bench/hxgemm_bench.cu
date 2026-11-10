@@ -133,21 +133,34 @@ struct Row {
   Shape s;
   float median = 0, mn = 0, mx = 0;
   double gflops = 0, pct = 0, max_abs = 0, max_rel = 0;
-  bool pass = false, timed = false;
+  bool pass = false, timed = false, ran = false;
+  unsigned long long fnv = 0;  // FNV-1a of the M x N result bits: equal => bitwise-identical
 };
+
+unsigned long long fnv1a(const float* C, int M, int N, int ldc) {
+  unsigned long long h = 1469598103934665603ull;
+  for (int i = 0; i < M; ++i) {
+    const unsigned char* p = reinterpret_cast<const unsigned char*>(C + size_t(i) * ldc);
+    for (size_t b = 0; b < size_t(N) * 4; ++b) h = (h ^ p[b]) * 1099511628211ull;
+  }
+  return h;
+}
 
 void print_row(const Row& r, FILE* csv) {
   if (r.timed)
     std::printf("kernel=%-6s tile=%-16s M=%-5d N=%-5d K=%-5d median_us=%10.2f min_us=%10.2f "
                 "max_us=%10.2f gflops=%9.1f pct_cublas=%6.1f max_abs_err=%.3e max_rel_err=%.3e "
-                "pass=%d\n",
+                "pass=%d fnv=%016llx\n",
                 r.kernel.c_str(), r.tile.c_str(), r.s.M, r.s.N, r.s.K, r.median, r.mn, r.mx,
-                r.gflops, r.pct, r.max_abs, r.max_rel, int(r.pass));
-  else
+                r.gflops, r.pct, r.max_abs, r.max_rel, int(r.pass), r.fnv);
+  else {
+    char fnv[32] = "";
+    if (r.ran) std::snprintf(fnv, sizeof fnv, " fnv=%016llx", r.fnv);
     std::printf("kernel=%-6s tile=%-16s M=%-5d N=%-5d K=%-5d max_abs_err=%.3e max_rel_err=%.3e "
-                "pass=%d%s%s\n",
+                "pass=%d%s%s%s\n",
                 r.kernel.c_str(), r.tile.c_str(), r.s.M, r.s.N, r.s.K, r.max_abs, r.max_rel,
-                int(r.pass), r.status.empty() ? "" : " status=", r.status.c_str());
+                int(r.pass), r.status.empty() ? "" : " status=", r.status.c_str(), fnv);
+  }
   if (csv) {
     if (r.timed)
       std::fprintf(csv, "%s,%s,%d,%d,%d,%.3f,%.3f,%.3f,%.2f,%.2f,%.6e,%.6e,%d\n", r.kernel.c_str(),
@@ -161,6 +174,19 @@ void print_row(const Row& r, FILE* csv) {
 }
 
 }  // namespace
+
+// Independent reference for large shapes: one thread per C element, FP64 accumulation,
+// same row-major/BLAS semantics as ref_cpu_fp64 (beta == 0 never reads C0).
+__global__ void ref_gpu_fp64(int M, int N, int K, double alpha, const float* A, int lda,
+                             const float* B, int ldb, double beta, const float* C0, int ldc,
+                             double* out) {
+  const int j = blockIdx.x * blockDim.x + threadIdx.x, i = blockIdx.y;
+  if (i >= M || j >= N) return;
+  double acc = 0;
+  for (int k = 0; k < K; ++k) acc += double(A[size_t(i) * lda + k]) * double(B[size_t(k) * ldb + j]);
+  const double c = beta == 0 ? 0.0 : beta * double(C0[size_t(i) * ldc + j]);
+  out[size_t(i) * ldc + j] = alpha * acc + c;
+}
 
 int main(int argc, char** argv) {
   Opts o = parse(argc, argv);
@@ -216,12 +242,19 @@ int main(int argc, char** argv) {
       ref_cpu_fp64(M, N, K, o.alpha, hA, lda, hB, ldb, o.beta, hC0, ldc, ref);
       ref_kind = "cpu_fp64";
     } else {
+      // GPU FP64 naive reference (not cuBLAS, so large-shape checks are independent of it).
       reset_c();
-      run_cublas();
+      double* dref;
+      CK(cudaMalloc(&dref, hC0.size() * sizeof(double)));
+      CK(cudaMemset(dref, 0, hC0.size() * sizeof(double)));
+      dim3 b(256), g((N + 255) / 256, M);
+      ref_gpu_fp64<<<g, b>>>(M, N, K, o.alpha, dA, lda, dB, ldb, o.beta, dC, ldc, dref);
+      CK(cudaGetLastError());
       CK(cudaDeviceSynchronize());
-      CK(cudaMemcpy(hC.data(), dC, hC.size() * 4, cudaMemcpyDeviceToHost));
-      ref.assign(hC.begin(), hC.end());
-      ref_kind = "cublas";
+      ref.resize(hC0.size());
+      CK(cudaMemcpy(ref.data(), dref, ref.size() * sizeof(double), cudaMemcpyDeviceToHost));
+      cudaFree(dref);
+      ref_kind = "gpu_fp64";
     }
     std::printf("# shape M=%d N=%d K=%d ref=%s alpha=%g beta=%g offset=%d%s\n", M, N, K, ref_kind,
                 o.alpha, o.beta, off, o.nan_c ? " nan_c=1" : "");
@@ -265,6 +298,8 @@ int main(int argc, char** argv) {
           }
           CK(cudaMemcpy(hC.data(), dC, hC.size() * 4, cudaMemcpyDeviceToHost));
           r.pass = check(hC.data(), ref.data(), M, N, ldc, K, &r.max_abs, &r.max_rel);
+          r.fnv = fnv1a(hC.data(), M, N, ldc);
+          r.ran = true;
         }
         if (r.pass && !o.check_only) {
           r.median = time_kernel(launch, o.warmup, o.iters, &r.mn, &r.mx, flush, flush_bytes);
