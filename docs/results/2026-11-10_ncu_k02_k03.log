@@ -1,0 +1,9 @@
+==WARNING== Note: Running with unmodified GPU clocks. If not controlled otherwise, profiling results may be inconsistent.
+==PROF== Connected to process 6755 (/home/a/hxgemm/build/hxgemm_bench)
+==PROF== Profiling "k02_coalesce": 0%....50%....100% - 17 passes
+==PROF== Profiling "k03_smem": 0%....50%....100% - 17 passes
+# shape M=2048 N=2048 K=2048 ref=cublas alpha=1 beta=0
+kernel=k02    tile=-                M=2048  N=2048  K=2048  max_abs_err=0.000e+00 max_rel_err=0.000e+00 pass=1
+kernel=k03    tile=-                M=2048  N=2048  K=2048  max_abs_err=0.000e+00 max_rel_err=0.000e+00 pass=1
+==PROF== Disconnected from process 6755
+==PROF== Report: /home/a/hxgemm/docs/results/2026-11-10_ncu_k02_k03.ncu-repz
