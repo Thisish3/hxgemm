@@ -42,6 +42,16 @@ int hx_launch(hxgemm_kernel_t k, hxgemm_tile_t t, int M, int N, int K, float alp
   }
 }
 
+extern "C" hxgemm_tile_t hxgemm_default_tile(hxgemm_kernel_t k, int M, int N, int) {
+  if (k == HXGEMM_K04) return hxgemm_tile_t{64, 128, 16, 8, 4, 0};  // 4096^3 sweep winner (R10)
+  if (k == HXGEMM_K05) {
+    const long long big_blocks = (long long)((M + 127) / 128) * ((N + 255) / 256);
+    return big_blocks >= 256 ? hxgemm_tile_t{128, 256, 16, 16, 8, 3}   // R15: best at 4096^3/8192^3
+                             : hxgemm_tile_t{128, 128, 32, 8, 4, 2};  // R10: better when few blocks
+  }
+  return hxgemm_tile_t{0, 0, 0, 0, 0, 0};
+}
+
 extern "C" int hxgemm_list_tiles(hxgemm_kernel_t k, hxgemm_tile_t* out, int cap) {
   if (!out || cap <= 0) return 0;
   if (k == HXGEMM_K04) return list_k04(out, cap);

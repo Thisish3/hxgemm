@@ -1,0 +1,9 @@
+==WARNING== Note: Running with unmodified GPU clocks. If not controlled otherwise, profiling results may be inconsistent.
+==PROF== Connected to process 45917 (/home/a/hxgemm/build/hxgemm_bench)
+==PROF== Profiling "k05_pipe": 0%.
+==WARNING== Launching the workload is taking more time than expected. If this continues to hang, terminate the profile and re-try by profiling the range of all related launches using '--replay-mode range'. See https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#replay for more details.
+...50%....100% - 22 passes
+# shape M=8192 N=8192 K=8192 ref=gpu_fp64 alpha=1 beta=0 offset=0
+kernel=k05    tile=128x256x16x16x8x3 M=8192  N=8192  K=8192  max_abs_err=7.223e-04 max_rel_err=6.425e+00 pass=1 fnv=b8ec580a17162fa6
+==PROF== Disconnected from process 45917
+==PROF== Report: /home/a/hxgemm/docs/results/2026-11-10_k05_8192_big.ncu-repz

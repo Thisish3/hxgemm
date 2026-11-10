@@ -1,0 +1,4 @@
+kernel,kernel_name,duration_ns,sm_throughput_pct,mem_throughput_pct,l1tex_throughput_pct,dram_throughput_pct,ipc_active,regs_per_thread,achieved_occupancy_pct,warp_cycles_per_issue,dram_read_bytes,l2_bytes,l1tex_bytes,inst_executed,smem_ld_conflicts,smem_st_conflicts,stall_long_sb,stall_mio,stall_lg,stall_barrier,sm_freq_hz
+k05,"void k05_pipe<128, 128, 32, 8, 4, 2, 1>",16325504,71.29,63.19,63.49,30.25,2.87,120,33.26,5.57,2079907840,4491443872,4563402752,2652274688,0,0,7861.16,60143.64,4295.70,123494.75,1498622339.62
+k05_auto,"void k05_pipe<128, 256, 16, 16, 8, 3, 1>",15751904,69.63,35.17,36.53,28.99,2.89,255,16.66,2.76,1917333632,3435780320,3489660928,2486067200,0,0,34333.47,27132.81,292.82,46056.93,1492919573.41
+cublas,ampere_sgemm_128x64_nn,14788928,74.75,57.77,57.87,32.72,2.99,122,33.15,5.31,1833632896,6945488544,6767205984,2516885504,0,2097152,2012.72,1737.15,6.84,24252.17,1498169874.11

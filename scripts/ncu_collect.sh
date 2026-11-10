@@ -5,12 +5,13 @@
 # `nvidia-smi -lgc` (Windows admin), so ncu runs with --clock-control none (LEDGER R5).
 set -euo pipefail
 d=$1; k=$2; tile=${3:-}
-declare -A NAME=([k01]=k01_naive [k02]=k02_coalesce [k03]=k03_smem [k04]=k04_reg [k05]=k05_pipe [cublas]=gemm)
+declare -A NAME=([k01]=k01_naive [k02]=k02_coalesce [k03]=k03_smem [k04]=k04_reg [k05]=k05_pipe [cublas]='gemm|^Kernel$')  # cuBLAS uses a kernel named "Kernel" at 8192^3
 [ -n "${NAME[$k]:-}" ] || { echo "unknown kernel $k" >&2; exit 64; }
-args=(--kernel "$k" --shape 4096,4096,4096 --check-only)
+SHAPE=${SHAPE:-4096,4096,4096}   # override, e.g. SHAPE=8192,8192,8192
+args=(--kernel "$k" --shape "$SHAPE" --check-only)
 [ -n "$tile" ] && args+=(--tile "$tile")
 NCU=${NCU:-/usr/local/cuda/bin/ncu}
-out=docs/results/${d}_${k}
+out=docs/results/${d}_${k}${SUFFIX:-}
 NVIDIA_TF32_OVERRIDE=0 "$NCU" --clock-control none -k "regex:${NAME[$k]}" --launch-count 1 \
   --section SpeedOfLight --section MemoryWorkloadAnalysis --section ComputeWorkloadAnalysis \
   --section Occupancy --section LaunchStats --section WarpStateStats --section SourceCounters \

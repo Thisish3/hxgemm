@@ -9,6 +9,10 @@ enum { HXGEMM_OK = 0, HXGEMM_EINVAL = -1, HXGEMM_ETILE = -2 };
 int hxgemm_sgemm(hxgemm_kernel_t k, hxgemm_tile_t t, int M, int N, int K, float alpha,
                  const float* A, int lda, const float* B, int ldb, float beta, float* C, int ldc,
                  cudaStream_t stream);
+/* tile used when the caller passes an all-zero tile (k01-k03: all zero). k05 picks by shape:
+   128x256x16x16x8 3-stage when ceil(M/128)*ceil(N/256) >= 256 blocks, else 128x128x32x8x4 2-stage
+   (rule measured in docs/results/2026-11-10_heur_final.csv, LEDGER R16). */
+hxgemm_tile_t hxgemm_default_tile(hxgemm_kernel_t k, int M, int N, int K);
 /* fills up to cap supported tiles for k04/k05 on the current device; returns count */
 int hxgemm_list_tiles(hxgemm_kernel_t k, hxgemm_tile_t* out, int cap);
 #ifdef __cplusplus

@@ -25,7 +25,7 @@ struct Opts {
   std::vector<Shape> shapes;
   bool have_tile = false, sweep = false, check_only = false, nan_c = false;
   int offset = 0;  // shift A/B/C by this many floats and add it to lda/ldb/ldc
-  hxgemm_tile_t tile = {0, 0, 0, 0, 0, 0};
+  std::vector<hxgemm_tile_t> tiles;  // --tile may be given several times
   int warmup = 10, iters = 50;
   float alpha = 1.f, beta = 0.f;
   std::string csv;
@@ -83,9 +83,10 @@ Opts parse(int argc, char** argv) {
       if (std::sscanf(val(), "%d:%d", &lo, &hi) != 2 || lo <= 0 || hi < lo) usage("bad --squares");
       for (int n = lo; n <= hi; n *= 2) o.shapes.push_back({n, n, n});
     } else if (a == "--tile") {
-      hxgemm_tile_t& t = o.tile;
+      hxgemm_tile_t t{};
       if (std::sscanf(val(), "%d,%d,%d,%d,%d,%d", &t.bm, &t.bn, &t.bk, &t.tm, &t.tn, &t.stages) != 6)
         usage("bad --tile");
+      o.tiles.push_back(t);
       o.have_tile = true;
     } else if (a == "--sweep") o.sweep = true;
     else if (a == "--warmup") o.warmup = std::atoi(val());
@@ -115,7 +116,7 @@ std::string tile_str(int k, const hxgemm_tile_t& t) {
   return b;
 }
 
-std::vector<hxgemm_tile_t> tiles_for(const Opts& o, int k) {
+std::vector<hxgemm_tile_t> tiles_for(const Opts& o, int k, const Shape& s) {
   if (k != HXGEMM_K04 && k != HXGEMM_K05) return {hxgemm_tile_t{0, 0, 0, 0, 0, 0}};
   if (o.sweep) {
     std::vector<hxgemm_tile_t> v(512);
@@ -123,10 +124,9 @@ std::vector<hxgemm_tile_t> tiles_for(const Opts& o, int k) {
     v.resize(n > 0 ? n : 0);
     return v;  // empty when the kernel offers no tiles yet
   }
-  if (o.have_tile) return {o.tile};
-  // Library defaults, spelled out so the CSV records the tile that actually ran.
-  // Must match launch_k04/launch_k05 defaults (4096^3 sweep winners, LEDGER R10).
-  return {k == HXGEMM_K04 ? hxgemm_tile_t{64, 128, 16, 8, 4, 0} : hxgemm_tile_t{128, 128, 32, 8, 4, 2}};
+  if (o.have_tile) return o.tiles;
+  // Library default for this shape, spelled out so the CSV records the tile that actually ran.
+  return {hxgemm_default_tile(static_cast<hxgemm_kernel_t>(k), s.M, s.N, s.K)};
 }
 
 struct Row {
@@ -269,7 +269,7 @@ int main(int argc, char** argv) {
     }
 
     for (int k : o.kernels) {
-      for (const hxgemm_tile_t& t : tiles_for(o, k)) {
+      for (const hxgemm_tile_t& t : tiles_for(o, k, s)) {
         Row r;
         r.kernel = kname(k);
         r.tile = k == KCUBLAS ? "-" : tile_str(k, t);
@@ -311,7 +311,7 @@ int main(int argc, char** argv) {
         if (!r.pass) ++failures;
         print_row(r, csv);
       }
-      if ((k == HXGEMM_K04 || k == HXGEMM_K05) && o.sweep && tiles_for(o, k).empty()) {
+      if ((k == HXGEMM_K04 || k == HXGEMM_K05) && o.sweep && tiles_for(o, k, s).empty()) {
         Row r;
         r.kernel = kname(k);
         r.tile = "sweep";

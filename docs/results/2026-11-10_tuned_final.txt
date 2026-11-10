@@ -1,0 +1,48 @@
+# shape M=256 N=256 K=256 ref=cpu_fp64 alpha=1 beta=0 offset=0
+kernel=k04    tile=64x128x16x8x4x0  M=256   N=256   K=256   median_us=     45.06 min_us=     44.03 max_us=     45.38 gflops=    744.7 pct_cublas=  31.8 max_abs_err=1.414e-05 max_rel_err=6.376e-03 pass=1 fnv=b00d1a1127fba3f5
+kernel=k05    tile=128x256x16x16x8x3 M=256   N=256   K=256   median_us=     85.82 min_us=     81.09 max_us=     86.02 gflops=    391.0 pct_cublas=  16.7 max_abs_err=1.414e-05 max_rel_err=6.376e-03 pass=1 fnv=b00d1a1127fba3f5
+kernel=cublas tile=-                M=256   N=256   K=256   median_us=     14.34 min_us=     14.05 max_us=     15.36 gflops=   2340.6 pct_cublas= 100.0 max_abs_err=5.242e-06 max_rel_err=2.548e-02 pass=1 fnv=60105abdd95a4394
+# shape M=512 N=512 K=512 ref=cpu_fp64 alpha=1 beta=0 offset=0
+kernel=k04    tile=64x128x16x8x4x0  M=512   N=512   K=512   median_us=     88.06 min_us=     87.04 max_us=     99.33 gflops=   3048.2 pct_cublas=  59.3 max_abs_err=3.465e-05 max_rel_err=1.767e-02 pass=1 fnv=90c82c046618ec73
+kernel=k05    tile=128x256x16x16x8x3 M=512   N=512   K=512   median_us=    154.62 min_us=    152.58 max_us=    157.70 gflops=   1736.1 pct_cublas=  33.8 max_abs_err=3.465e-05 max_rel_err=1.767e-02 pass=1 fnv=90c82c046618ec73
+kernel=cublas tile=-                M=512   N=512   K=512   median_us=     52.22 min_us=     51.04 max_us=     54.27 gflops=   5140.1 pct_cublas= 100.0 max_abs_err=1.100e-05 max_rel_err=4.013e-02 pass=1 fnv=38b0b7134815d93c
+# shape M=1024 N=1024 K=1024 ref=gpu_fp64 alpha=1 beta=0 offset=0
+kernel=k04    tile=64x128x16x8x4x0  M=1024  N=1024  K=1024  median_us=    342.02 min_us=    340.99 max_us=    352.26 gflops=   6278.9 pct_cublas=  78.7 max_abs_err=7.801e-05 max_rel_err=4.778e-01 pass=1 fnv=7ba50d03ebd8c23b
+kernel=k05    tile=128x256x16x16x8x3 M=1024  N=1024  K=1024  median_us=    307.94 min_us=    304.13 max_us=    589.02 gflops=   6973.8 pct_cublas=  87.5 max_abs_err=7.801e-05 max_rel_err=4.778e-01 pass=1 fnv=7ba50d03ebd8c23b
+kernel=cublas tile=-                M=1024  N=1024  K=1024  median_us=    269.31 min_us=    268.29 max_us=    280.58 gflops=   7974.0 pct_cublas= 100.0 max_abs_err=1.895e-05 max_rel_err=4.759e-01 pass=1 fnv=1fa786de3558560d
+# shape M=2048 N=2048 K=2048 ref=gpu_fp64 alpha=1 beta=0 offset=0
+kernel=k04    tile=64x128x16x8x4x0  M=2048  N=2048  K=2048  median_us=   2217.98 min_us=   2212.86 max_us=   2549.76 gflops=   7745.7 pct_cublas=  87.7 max_abs_err=1.577e-04 max_rel_err=4.427e+00 pass=1 fnv=fa1658f18a7d0c5d
+kernel=k05    tile=128x256x16x16x8x3 M=2048  N=2048  K=2048  median_us=   2281.31 min_us=   2272.26 max_us=   2890.88 gflops=   7530.7 pct_cublas=  85.3 max_abs_err=1.577e-04 max_rel_err=4.427e+00 pass=1 fnv=fa1658f18a7d0c5d
+kernel=cublas tile=-                M=2048  N=2048  K=2048  median_us=   1933.31 min_us=   1932.22 max_us=   2544.64 gflops=   8886.2 pct_cublas= 100.6 max_abs_err=1.577e-04 max_rel_err=4.427e+00 pass=1 fnv=fa1658f18a7d0c5d
+# shape M=4096 N=4096 K=4096 ref=gpu_fp64 alpha=1 beta=0 offset=0
+kernel=k04    tile=64x128x16x8x4x0  M=4096  N=4096  K=4096  median_us=  16718.85 min_us=  16622.59 max_us=  18043.90 gflops=   8220.6 pct_cublas=  88.4 max_abs_err=3.868e-04 max_rel_err=3.004e+01 pass=1 fnv=45e5410fa35be654
+kernel=k05    tile=128x256x16x16x8x3 M=4096  N=4096  K=4096  median_us=  15662.08 min_us=  15643.33 max_us=  16780.64 gflops=   8775.3 pct_cublas=  94.4 max_abs_err=3.868e-04 max_rel_err=3.004e+01 pass=1 fnv=45e5410fa35be654
+kernel=cublas tile=-                M=4096  N=4096  K=4096  median_us=  14782.46 min_us=  14781.44 max_us=  15677.44 gflops=   9297.4 pct_cublas= 100.0 max_abs_err=1.200e-04 max_rel_err=1.401e+01 pass=1 fnv=3d9a5fd7de2161c8
+# shape M=8192 N=8192 K=8192 ref=gpu_fp64 alpha=1 beta=0 offset=0
+kernel=k04    tile=64x128x16x8x4x0  M=8192  N=8192  K=8192  median_us= 134769.67 min_us= 133725.19 max_us= 137443.62 gflops=   8158.4 pct_cublas=  72.2 max_abs_err=7.223e-04 max_rel_err=6.425e+00 pass=1 fnv=b8ec580a17162fa6
+kernel=k05    tile=128x256x16x16x8x3 M=8192  N=8192  K=8192  median_us= 121240.58 min_us= 120560.61 max_us= 122920.00 gflops=   9068.8 pct_cublas=  80.3 max_abs_err=7.223e-04 max_rel_err=6.425e+00 pass=1 fnv=b8ec580a17162fa6
+kernel=cublas tile=-                M=8192  N=8192  K=8192  median_us=  97557.66 min_us=  96480.26 max_us=  98727.13 gflops=  11270.4 pct_cublas=  99.8 max_abs_err=7.223e-04 max_rel_err=6.425e+00 pass=1 fnv=b8ec580a17162fa6
+# shape M=1000 N=1000 K=1000 ref=gpu_fp64 alpha=1 beta=0 offset=0
+kernel=k04    tile=64x128x16x8x4x0  M=1000  N=1000  K=1000  median_us=    342.02 min_us=    339.97 max_us=    343.07 gflops=   5847.7 pct_cublas=  75.7 max_abs_err=7.847e-05 max_rel_err=8.351e-02 pass=1 fnv=a7af9f3f29ac5922
+kernel=k05    tile=128x256x16x16x8x3 M=1000  N=1000  K=1000  median_us=    306.37 min_us=    304.13 max_us=    604.16 gflops=   6528.1 pct_cublas=  84.6 max_abs_err=7.847e-05 max_rel_err=8.351e-02 pass=1 fnv=a7af9f3f29ac5922
+kernel=cublas tile=-                M=1000  N=1000  K=1000  median_us=    258.05 min_us=    256.61 max_us=    260.16 gflops=   7750.5 pct_cublas= 100.4 max_abs_err=2.034e-05 max_rel_err=7.673e-02 pass=1 fnv=56f42e855c24ceda
+# shape M=2047 N=2047 K=2047 ref=gpu_fp64 alpha=1 beta=0 offset=0
+kernel=k04    tile=64x128x16x8x4x0  M=2047  N=2047  K=2047  median_us=   3042.50 min_us=   3039.23 max_us=   3659.78 gflops=   5638.4 pct_cublas=  64.1 max_abs_err=1.607e-04 max_rel_err=1.618e+00 pass=1 fnv=f3fb52c6b3029f43
+kernel=k05    tile=128x256x16x16x8x3 M=2047  N=2047  K=2047  median_us=   2586.62 min_us=   2579.46 max_us=   2865.34 gflops=   6632.1 pct_cublas=  75.4 max_abs_err=1.607e-04 max_rel_err=1.618e+00 pass=1 fnv=f3fb52c6b3029f43
+kernel=cublas tile=-                M=2047  N=2047  K=2047  median_us=   1936.38 min_us=   1934.34 max_us=   2490.37 gflops=   8859.2 pct_cublas= 100.7 max_abs_err=1.607e-04 max_rel_err=1.618e+00 pass=1 fnv=f3fb52c6b3029f43
+# shape M=4095 N=4095 K=4095 ref=gpu_fp64 alpha=1 beta=0 offset=0
+kernel=k04    tile=64x128x16x8x4x0  M=4095  N=4095  K=4095  median_us=  23792.64 min_us=  23415.52 max_us=  25291.78 gflops=   5772.3 pct_cublas=  62.1 max_abs_err=3.607e-04 max_rel_err=1.186e+01 pass=1 fnv=e585d2abb1586655
+kernel=k05    tile=128x256x16x16x8x3 M=4095  N=4095  K=4095  median_us=  17832.06 min_us=  17818.62 max_us=  18709.76 gflops=   7701.8 pct_cublas=  82.9 max_abs_err=3.607e-04 max_rel_err=1.186e+01 pass=1 fnv=e585d2abb1586655
+kernel=cublas tile=-                M=4095  N=4095  K=4095  median_us=  14786.56 min_us=  14659.58 max_us=  16299.23 gflops=   9288.1 pct_cublas= 100.0 max_abs_err=1.217e-04 max_rel_err=8.659e+00 pass=1 fnv=f423930683d503e8
+# shape M=16 N=4096 K=4096 ref=gpu_fp64 alpha=1 beta=0 offset=0
+kernel=k04    tile=64x128x16x8x4x0  M=16    N=4096  K=4096  median_us=    596.99 min_us=    594.94 max_us=    825.34 gflops=    899.3 pct_cublas=  31.9 max_abs_err=2.338e-04 max_rel_err=9.852e-02 pass=1 fnv=a849a9c31112b5b5
+kernel=k05    tile=128x256x16x16x8x3 M=16    N=4096  K=4096  median_us=   1106.94 min_us=   1105.92 max_us=   1632.48 gflops=    485.0 pct_cublas=  17.2 max_abs_err=2.338e-04 max_rel_err=9.852e-02 pass=1 fnv=a849a9c31112b5b5
+kernel=cublas tile=-                M=16    N=4096  K=4096  median_us=    190.46 min_us=    189.44 max_us=    198.91 gflops=   2818.8 pct_cublas= 100.0 max_abs_err=4.452e-05 max_rel_err=3.274e-02 pass=1 fnv=b1544eb3eba8b882
+# shape M=128 N=4096 K=4096 ref=gpu_fp64 alpha=1 beta=0 offset=0
+kernel=k04    tile=64x128x16x8x4x0  M=128   N=4096  K=4096  median_us=    780.13 min_us=    773.22 max_us=    785.22 gflops=   5505.5 pct_cublas=  64.8 max_abs_err=2.431e-04 max_rel_err=5.728e-01 pass=1 fnv=e1728b40be2558b3
+kernel=k05    tile=128x256x16x16x8x3 M=128   N=4096  K=4096  median_us=   1118.21 min_us=   1117.18 max_us=   1646.59 gflops=   3840.9 pct_cublas=  45.2 max_abs_err=2.431e-04 max_rel_err=5.728e-01 pass=1 fnv=e1728b40be2558b3
+kernel=cublas tile=-                M=128   N=4096  K=4096  median_us=    502.78 min_us=    501.76 max_us=    504.83 gflops=   8542.4 pct_cublas= 100.6 max_abs_err=5.853e-05 max_rel_err=8.940e-02 pass=1 fnv=c35e0e4f2e66b431
+# shape M=2048 N=4096 K=4096 ref=gpu_fp64 alpha=1 beta=0 offset=0
+kernel=k04    tile=64x128x16x8x4x0  M=2048  N=4096  K=4096  median_us=   8414.40 min_us=   8360.96 max_us=   9440.26 gflops=   8166.9 pct_cublas=  86.6 max_abs_err=3.625e-04 max_rel_err=2.995e+00 pass=1 fnv=eb0435dcc60b83d7
+kernel=k05    tile=128x256x16x16x8x3 M=2048  N=4096  K=4096  median_us=   7852.03 min_us=   7841.79 max_us=   8718.34 gflops=   8751.8 pct_cublas=  92.9 max_abs_err=3.625e-04 max_rel_err=2.995e+00 pass=1 fnv=eb0435dcc60b83d7
+kernel=cublas tile=-                M=2048  N=4096  K=4096  median_us=   7290.88 min_us=   7219.20 max_us=   8162.30 gflops=   9425.4 pct_cublas= 100.0 max_abs_err=1.935e-04 max_rel_err=2.086e+00 pass=1 fnv=6f8581acfc63a85b

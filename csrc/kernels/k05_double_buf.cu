@@ -13,7 +13,13 @@ k05_pipe(int M, int N, int K, float alpha, const float* A, int lda, const float*
   constexpr int NT = (BM / TM) * (BN / TN), SA = BM * BK, SB = BK * BN;
   extern __shared__ float smem[];
   const int tid = threadIdx.x, bm0 = blockIdx.y * BM, bn0 = blockIdx.x * BN;
-  const int tr = (tid / (BN / TN)) * TM, tc = (tid % (BN / TN)) * TN;
+  // Column layout (Task 10 round 2, LEDGER R13): a thread's TN columns are TN/4 chunks of 4,
+  // chunk q at q * (BN / (TN / 4)) + tx * 4. Lanes then read consecutive 16 B pieces of a B row
+  // (one LDS.128 covers 512 contiguous bytes) instead of 4*TN-byte strided ones. TN = 4 is unchanged.
+  static_assert(TN % 4 == 0, "TN must be a multiple of 4");
+  constexpr int NCH = TN / 4, CSTRIDE = BN / NCH;
+  const int tx = tid % (BN / TN);
+  const int tr = (tid / (BN / TN)) * TM, tc = tx * 4;
   const int ntile = (K + BK - 1) / BK;
   auto load = [&](int t, int slot) {
     float* As = smem + slot * (SA + SB);
@@ -61,7 +67,7 @@ k05_pipe(int M, int N, int K, float alpha, const float* A, int lda, const float*
 #pragma unroll
       for (int i = 0; i < TM; ++i) ra[i] = As[(tr + i) * BK + kk];
 #pragma unroll
-      for (int j = 0; j < TN; ++j) rb[j] = Bs[kk * BN + tc + j];
+      for (int j = 0; j < TN; ++j) rb[j] = Bs[kk * BN + (j / 4) * CSTRIDE + tc + (j % 4)];
 #pragma unroll
       for (int i = 0; i < TM; ++i)
 #pragma unroll
@@ -72,7 +78,7 @@ k05_pipe(int M, int N, int K, float alpha, const float* A, int lda, const float*
   for (int i = 0; i < TM; ++i)
 #pragma unroll
     for (int j = 0; j < TN; ++j) {
-      const int r = bm0 + tr + i, c = bn0 + tc + j;
+      const int r = bm0 + tr + i, c = bn0 + (j / 4) * CSTRIDE + tc + (j % 4);
       if (r < M && c < N)
         C[r * ldc + c] = hx_out(acc[i][j], alpha, beta, beta == 0.f ? 0.f : C[r * ldc + c]);
     }
@@ -110,7 +116,7 @@ int run(int M, int N, int K, float alpha, const float* A, int lda, const float* 
 int launch_k05(hxgemm_tile_t t, int M, int N, int K, float alpha, const float* A, int lda,
                const float* B, int ldb, float beta, float* C, int ldc, cudaStream_t s) {
   if (t.bm == 0 && t.bn == 0 && t.bk == 0 && t.tm == 0 && t.tn == 0 && t.stages == 0)
-    t = hxgemm_tile_t{128, 128, 32, 8, 4, 2};  // 4096^3 sweep winner (docs/results/2026-11-10_best_tiles.md)
+    t = hxgemm_default_tile(HXGEMM_K05, M, N, K);  // shape-dependent (LEDGER R16)
 #define HX_CASE(BM, BN, BK, TM, TN)                                                      \
   if (t.bm == BM && t.bn == BN && t.bk == BK && t.tm == TM && t.tn == TN) {             \
     if (t.stages == 2) return run<BM, BN, BK, TM, TN, 2>(M, N, K, alpha, A, lda, B, ldb, beta, C, ldc, s); \
@@ -118,6 +124,7 @@ int launch_k05(hxgemm_tile_t t, int M, int N, int K, float alpha, const float* A
     return HXGEMM_ETILE;                                                                 \
   }
   HX_TILES(HX_CASE)
+  HX_TILES_BIG(HX_CASE)
 #undef HX_CASE
   return HXGEMM_ETILE;
 }
@@ -131,6 +138,7 @@ int list_k05(hxgemm_tile_t* out, int cap) {
         st * (BM * BK + BK * BN) * 4 <= lim && n < cap)                                    \
       out[n++] = hxgemm_tile_t{BM, BN, BK, TM, TN, st};
     HX_TILES(HX_ADD)
+    HX_TILES_BIG(HX_ADD)
 #undef HX_ADD
   }
   return n;
