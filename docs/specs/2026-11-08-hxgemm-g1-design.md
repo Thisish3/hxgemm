@@ -118,7 +118,17 @@ FP16/BF16, Tensor Core(G2), 양자화와 split-K(G3), HIP(G4), batched GEMM, 열
 | Python / PyTorch | Python 3.10.12(`/usr/bin/python3`), torch 2.9.1+cu128, `torch.version.cuda` 12.8, `cuda.is_available()` True |
 | Nsight Compute | `/usr/local/cuda/bin/ncu`, 2026.3.1.0 (build 38829034) |
 | WSL2에서 ncu 카운터 | **읽힌다.** 작은 테스트 커널에서 `--section SpeedOfLight`가 7 pass로 수집됨(권한 오류 없음). ncu 기본값(`--clock-control base`)에서 SM 1.66 GHz, DRAM 6.78 GHz로 보고됨 |
-| 클럭 고정 `nvidia-smi -lgc 1500,1500` | 실패(일반 사용자): `The current user does not have permission to change clocks for GPU 00000000:01:00.0.` / `Terminating early due to previous errors.` `-rgc`도 같은 메시지. sudo로는 아직 시도하지 않음 → 5절대로 측정 중 클럭을 1초 간격으로 기록한다 |
+| 클럭 고정 `nvidia-smi -lgc 1500,1500` | WSL 안(일반 사용자)에서는 실패: `The current user does not have permission to change clocks for GPU 00000000:01:00.0.` / `Terminating early due to previous errors.`(`-rgc`도 같음). **Windows 관리자 cmd에서는 성공:** `GPU clocks set to "(gpuClkMin 1500, gpuClkMax 1500)" for GPU 00000000:01:00.0`. WSL에서 4096² matmul을 돌리며 1초 간격으로 확인하니 부하 100%, 36→66 °C 동안 SM 1500 MHz, 메모리 6800 MHz로 유지됐다(clocks.max.sm 2130 MHz). 해제는 Windows 관리자 권한으로 `nvidia-smi -rgc`. 측정 중 클럭 로그(5절)는 고정해도 계속 남긴다 |
+| ncu와 클럭 | ncu 기본값은 `--clock-control base`(ncu가 클럭을 직접 설정)이고, 위 테스트에서는 SM 1.66 GHz로 보고됐다(이때는 `-lgc` 전이었음, 1.66 GHz가 나온 원인 미확인). `-lgc` 1500과 함께 쓸 때 ncu가 보고하는 클럭은 Task 9에서 확인하고 `--clock-control` 값을 정한다 |
 | 메모리 | WSL2에 보이는 RAM 7 GiB(`free -g`), 호스트 16 GB |
 
-device query(`build/devinfo`)는 Task 1에서 추가한다.
+device query(`build/devinfo`, Task 1, 2026-11-10):
+
+```
+name=NVIDIA GeForce RTX 3060 Ti cc=8.6 sms=38 clock_khz=1680000 l2_bytes=3145728 smem_per_block=49152 smem_per_block_optin=101376 smem_per_sm=102400 regs_per_sm=65536
+fp32_peak_gflops_at_reported_clock=16343.0 (SMs x 128 FP32 lanes x 2 x clock)
+```
+
+- L2는 3 MiB(3,145,728 B)로 보고된다(인계 메모에 적었던 "L2 4MB"와 다름). L2 비우기 버퍼는 이 값 × 2 = 6 MiB.
+- 이론 최고는 SM 클럭을 1500 MHz로 고정하면 38 × 128 × 2 × 1.5 GHz = 14,592 GFLOPS다(5절 공식, 측정 중 클럭 로그로 확인).
+- shared memory: 블록당 기본 48 KiB, opt-in 최대 99 KiB(101,376 B), SM당 100 KiB.
