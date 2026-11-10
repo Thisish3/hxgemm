@@ -1,0 +1,2 @@
+# shape M=4096 N=4096 K=4096 ref=cublas alpha=1 beta=0 offset=0
+kernel=k05    tile=128x128x8x8x8x3  M=4096  N=4096  K=4096  median_us=  18378.75 min_us=  18357.25 max_us=  19260.58 gflops=   7478.1 pct_cublas=  80.4 max_abs_err=3.967e-04 max_rel_err=3.753e+00 pass=1

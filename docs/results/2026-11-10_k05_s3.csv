@@ -1,0 +1,2 @@
+kernel,tile,M,N,K,median_us,min_us,max_us,gflops,pct_cublas,max_abs_err,max_rel_err,pass
+k05,128x128x8x8x8x3,4096,4096,4096,18378.752,18357.248,19260.576,7478.14,80.43,3.967285e-04,3.752880e+00,1

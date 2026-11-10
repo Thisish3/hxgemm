@@ -8,6 +8,8 @@ void launch_k02(HX_LAUNCH_ARGS);
 void launch_k03(HX_LAUNCH_ARGS);
 int launch_k04(hxgemm_tile_t t, HX_LAUNCH_ARGS);
 int list_k04(hxgemm_tile_t* out, int cap);
+int launch_k05(hxgemm_tile_t t, HX_LAUNCH_ARGS);
+int list_k05(hxgemm_tile_t* out, int cap);
 
 namespace {
 bool is_default(const hxgemm_tile_t& t) {
@@ -33,6 +35,8 @@ int hx_launch(hxgemm_kernel_t k, hxgemm_tile_t t, int M, int N, int K, float alp
       return HXGEMM_OK;
     case HXGEMM_K04:
       return launch_k04(t, M, N, K, alpha, A, lda, B, ldb, beta, C, ldc, s);
+    case HXGEMM_K05:
+      return launch_k05(t, M, N, K, alpha, A, lda, B, ldb, beta, C, ldc, s);
     default:
       return HXGEMM_ETILE;
   }
@@ -41,5 +45,6 @@ int hx_launch(hxgemm_kernel_t k, hxgemm_tile_t t, int M, int N, int K, float alp
 extern "C" int hxgemm_list_tiles(hxgemm_kernel_t k, hxgemm_tile_t* out, int cap) {
   if (!out || cap <= 0) return 0;
   if (k == HXGEMM_K04) return list_k04(out, cap);
+  if (k == HXGEMM_K05) return list_k05(out, cap);
   return 0;
 }
