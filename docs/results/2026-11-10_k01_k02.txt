@@ -1,0 +1,4 @@
+# shape M=2048 N=2048 K=2048 ref=cublas alpha=1 beta=0
+kernel=k01    tile=-                M=2048  N=2048  K=2048  median_us= 158231.55 min_us= 157357.06 max_us= 163955.72 gflops=    108.6 pct_cublas=   1.2 max_abs_err=0.000e+00 max_rel_err=0.000e+00 pass=1
+kernel=k02    tile=-                M=2048  N=2048  K=2048  median_us=  21346.40 min_us=  21322.34 max_us=  23117.82 gflops=    804.8 pct_cublas=   9.1 max_abs_err=0.000e+00 max_rel_err=0.000e+00 pass=1
+kernel=cublas tile=-                M=2048  N=2048  K=2048  median_us=   1934.34 min_us=   1932.29 max_us=   1950.62 gflops=   8881.5 pct_cublas= 100.6 max_abs_err=0.000e+00 max_rel_err=0.000e+00 pass=1
