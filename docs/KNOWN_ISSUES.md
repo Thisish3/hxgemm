@@ -7,7 +7,7 @@
 1. **데스크탑에 CUDA 툴킷이 두 벌 있고, 잘못 고르면 GPU를 못 찾는다** (2026-11-10, LEDGER R4)
    - apt `nvidia-cuda-toolkit` 11.5(`/usr/bin/nvcc`, `libcublas.so.11`)와 `/usr/local/cuda` 12.2가 함께 있다. apt `libnvidia-compute-{495,510,535,580}`도 설치되어 있어 `/lib/x86_64-linux-gnu/libcuda.so`(580.178.04, WSL용 아님)가 있다.
    - cuBLAS 11에 링크하면 이 `libcuda.so`가 로드되어 `no CUDA-capable device is detected`. 지금은 `CMakeLists.txt`가 `/usr/local/cuda/bin/nvcc`를 우선해 피한다.
-   - 남은 위험: PyTorch 확장(Task 8)이나 다른 도구가 `libcuda.so`(버전 없는 이름)를 dlopen하면 같은 문제가 날 수 있다. 시스템 패키지 정리는 사용자 결정으로 남김.
+   - 남은 위험: 다른 도구가 `libcuda.so`(버전 없는 이름)를 dlopen하면 같은 문제가 날 수 있다. PyTorch 확장(Task 8, `CUDA_HOME=/usr/local/cuda`로 빌드)은 문제없이 동작했다(pytest 54 passed). 시스템 패키지 정리는 사용자 결정으로 남김.
 2. **클럭 고정은 Windows 관리자 권한에서만 된다** (LEDGER R3)
    - WSL 안에서는 `nvidia-smi -lgc`가 권한 오류. 측정 전 Windows 관리자 cmd에서 `nvidia-smi -lgc 1500,1500`, 끝나면 `nvidia-smi -rgc`. Mac에서 `ssh desk`로 측정할 때는 고정 여부를 클럭 로그로만 확인할 수 있다.
    - ncu `--clock-control` 값과 `-lgc`의 관계는 Task 9에서 확인한다.
@@ -43,6 +43,11 @@
    - DRAM read 1.06 → 2.14 GB, L2 hit 77.13 → 57.46 %. 그래도 시간은 −11 %(20.80 → 18.49 ms).
    - 원인 미확인. 후보: `cp.async.cg`(L1 우회)로 A/B 재사용이 L1에서 L2로 옮겨 감, 블록 실행 순서 변화. `cp.async.ca`로 바꿔 보거나 L1/L2 sector 지표를 비교해 확인한다.
    - k05의 55행 `load()` 호출이 stall 샘플 29.2 %를 차지하는 이유도 미확인(SASS로 확인).
+7. **Python 벤치에서 본 비배수·작은 모양 성능** (2026-11-10, `docs/results/2026-11-10_py_bench.csv`, 기본 타일)
+   - k05가 2047³(4914.2 GFLOPS)·4095³(5207.0)에서 k04(5494.5·6083.6)보다 느리다. 4096³에서는 k05가 빠르다(7459.6 vs 6618.6). 코드상 ld가 4의 배수가 아니면 k04·k05 모두 float4/16 B 경로 대신 스칼라 경로를 쓰고, k05의 스칼라 경로는 4 B `cp.async`를 원소마다 발행한다. 이것이 느린 이유인지는 측정하지 않았다(원인 미확인).
+   - k01이 1000³(287.0)·2047³(366.2)에서 2의 거듭제곱 크기(약 109)보다 2.6~3.4배 빠르다. 원인 미확인.
+   - 8192³에서 k05는 torch 대비 66.3 %(4096³ 80.2 %보다 낮음), torch는 8192³에서 11402.8 GFLOPS로 4096³(9297.4)보다 높다. 원인 미확인.
+   - 디코드 모양 16×4096²에서 k05 기본 타일은 torch 대비 24.2 %(sweep 최고 타일도 55.8 %).
 
 ## 해결
 
