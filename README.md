@@ -2,6 +2,10 @@
 
 FP32 SGEMM(C = αAB + βC, 행 우선)을 naive부터 cp.async 파이프라인까지 다섯 단계로 직접 만들고, 같은 조건에서 cuBLAS와 비교한 프로젝트(G1). 단계마다 "바꾼 코드 → 바뀐 Nsight 지표 → 바뀐 GFLOPS"를 측정으로 남긴다.
 
+<p align="center"><img src="docs/images/hxgemm_ladder.png" alt="다섯 단계 GFLOPS: k01 109, k02 808, k03 1,063, k04 8,231, k05 8,775 (cuBLAS 9,298의 94.4 %)" width="800"></p>
+
+<p align="center"><img src="docs/images/hxgemm_struct.png" alt="hxgemm 구조: C API와 PyTorch op → dispatch와 타일 표 → 커널 k01~k05 → 벤치 하니스, 클럭 고정 측정, Nsight 수집, FP64 기준 검증" width="900"></p>
+
 - 설계: `docs/specs/2026-11-08-hxgemm-g1-design.md` · 계획: `docs/plans/2026-11-08-hxgemm-g1.md`
 - 실행 기록(계획과 달라진 결정 R1~R16): `docs/LEDGER.md` · 미해결 현상: `docs/KNOWN_ISSUES.md`
 - 블로그용 Nsight 캡처: `docs/blog/2026-11-10_nsight_{k02_k03,k03_k04,k04_k05}/` (옛 기본 타일 128x128x8x8x8로 잰 것, 아래 참고)
